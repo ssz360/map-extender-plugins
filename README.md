@@ -5,21 +5,12 @@ A registry of community plugins for the Map Extender browser extension.
 Add it in the extension: **Plugins → Browse gallery → Add registry**, then paste:
 
 ```
-https://REPLACE-ME.github.io/map-extender-plugins/registry.json
-```
-
-Or the raw alternate:
-
-```
-https://raw.githubusercontent.com/REPLACE-ME/map-extender-plugins/main/registry.json
+https://raw.githubusercontent.com/ssz360/map-extender-plugins/refs/heads/main/registry.json
 ```
 
 Push it to its own remote:
 
-```bash
-git remote add origin git@github.com:<user>/map-extender-plugins.git
-git push -u origin main
-```
+This registry is published from the `main` branch of this repository.
 
 ## What's here
 
@@ -50,17 +41,21 @@ validate.mjs       the rules, also runnable on its own
 
 ```bash
 node validate.mjs
-REGISTRY_BASE_URL=https://REPLACE-ME.github.io/map-extender-plugins node build.mjs
+node build.mjs
 ```
 
-`build.mjs` refuses to write `registry.json` if validation fails. `REGISTRY_BASE_URL` is what
-relative screenshot paths are resolved against — set it or screenshots will not load.
+`build.mjs` refuses to write `registry.json` if validation fails. Set `REGISTRY_BASE_URL` to
+override what relative screenshot paths resolve against; it defaults to this repository's raw
+URL on `main`.
 
 ## Publishing
 
-`registry.json` is committed and served from the repository root. GitHub Pages is the canonical
-URL; `raw.githubusercontent.com` works too and is always current, where Pages is CDN-cached for a
-few minutes after a push. A publish that seems not to have landed is usually just that cache.
+`registry.json` is committed and served straight from the repository via
+`raw.githubusercontent.com`, which is always current and needs no Pages setup. It is cached for
+five minutes (`cache-control: max-age=300`), so a push can take that long to be visible.
+
+Enabling GitHub Pages is optional; if you do, `https://ssz360.github.io/map-extender-plugins/registry.json`
+serves the same file and the extension accepts either.
 
 The extension parses the response rather than trusting its `Content-Type`, so `text/plain` from
 raw.githubusercontent is fine.

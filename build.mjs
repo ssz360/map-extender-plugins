@@ -10,7 +10,9 @@ const OUT = fileURLToPath(new URL('./registry.json', import.meta.url))
 
 // Screenshots are stored beside each plugin and published with the repo; rewrite the relative
 // paths to absolute URLs so the extension can render them from anywhere.
-const BASE_URL = process.env.REGISTRY_BASE_URL ?? 'https://REPLACE-ME.github.io/map-extender-plugins'
+// Relative screenshot paths resolve against this. raw.githubusercontent serves images with a
+// usable content type, so it works without GitHub Pages being enabled.
+const BASE_URL = process.env.REGISTRY_BASE_URL ?? 'https://raw.githubusercontent.com/ssz360/map-extender-plugins/refs/heads/main'
 
 function absoluteScreenshots(slug, screenshots) {
   return (screenshots ?? []).map((shot) =>
@@ -53,5 +55,5 @@ writeFileSync(OUT, JSON.stringify(registry, null, 2) + '\n')
 const bytes = Buffer.byteLength(JSON.stringify(registry))
 console.log(`✓ registry.json — ${registry.plugins.length} plugins, ${(bytes / 1024).toFixed(1)} kB`)
 if (BASE_URL.includes('REPLACE-ME')) {
-  console.warn('  ! REGISTRY_BASE_URL is unset — screenshot URLs will not resolve.')
+  console.warn('  ! REGISTRY_BASE_URL looks unset — screenshot URLs will not resolve.')
 }

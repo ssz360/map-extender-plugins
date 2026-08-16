@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "name": "Map Extender Plugins",
   "description": "Community plugins for the Map Extender browser extension.",
-  "homepage": "https://REPLACE-ME.github.io/map-extender-plugins",
+  "homepage": "https://raw.githubusercontent.com/ssz360/map-extender-plugins/refs/heads/main",
   "updatedAt": "2026-08-16",
   "plugins": [
     {
