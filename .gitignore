@@ -1,0 +1,6 @@
+node_modules
+.DS_Store
+*.log
+
+# registry.json IS committed — it is the published artifact, and CI verifies that a rebuild
+# matches what is checked in.

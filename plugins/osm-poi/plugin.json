@@ -1,0 +1,47 @@
+{
+  "id": "extender:osm-poi",
+  "name": "OSM Points of Interest",
+  "description": "One configurable OpenStreetMap POI layer — EV charging, drinking water, toilets, bicycle parking, pharmacies, cafes, supermarkets or viewpoints.",
+  "version": "1.0.0",
+  "author": "Map Extender",
+  "usage": "Zoom in, then pan to load",
+  "matchPatterns": [
+    "*://*/*"
+  ],
+  "settingsSchema": [
+    {
+      "key": "category",
+      "label": "Category",
+      "type": "select",
+      "default": "charging",
+      "options": [
+        "charging",
+        "drinking_water",
+        "toilets",
+        "bicycle_parking",
+        "pharmacy",
+        "cafe",
+        "supermarket",
+        "viewpoint"
+      ]
+    },
+    {
+      "key": "minZoom",
+      "label": "Minimum zoom to query",
+      "type": "number",
+      "default": 14
+    },
+    {
+      "key": "color",
+      "label": "Marker colour (blank = per category)",
+      "type": "text",
+      "default": ""
+    }
+  ],
+  "settings": {
+    "category": "charging",
+    "minZoom": 14,
+    "color": ""
+  },
+  "screenshots": []
+}

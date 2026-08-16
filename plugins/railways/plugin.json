@@ -1,0 +1,14 @@
+{
+  "id": "extender:railways",
+  "name": "Rail Tracks",
+  "description": "Draws railway polylines via the OpenStreetMap Overpass API.",
+  "version": "1.0.0",
+  "author": "Map Extender",
+  "usage": "Updates as you pan the map",
+  "matchPatterns": [
+    "*://*/*"
+  ],
+  "settingsSchema": [],
+  "settings": {},
+  "screenshots": []
+}

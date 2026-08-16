@@ -1,0 +1,23 @@
+{
+  "id": "extender:openseamap",
+  "name": "OpenSeaMap Seamarks",
+  "description": "Nautical seamark overlay from OpenSeaMap — buoys, lights, harbours and navigation aids. Sparse inland by design.",
+  "version": "1.0.0",
+  "author": "Map Extender",
+  "usage": "Always-on map overlay",
+  "matchPatterns": [
+    "*://*/*"
+  ],
+  "settingsSchema": [
+    {
+      "key": "opacity",
+      "label": "Opacity (0–1)",
+      "type": "number",
+      "default": 1
+    }
+  ],
+  "settings": {
+    "opacity": 1
+  },
+  "screenshots": []
+}

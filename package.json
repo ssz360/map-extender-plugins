@@ -1,0 +1,10 @@
+{
+  "name": "map-extender-plugins",
+  "private": true,
+  "type": "module",
+  "description": "Community plugin registry for the Map Extender browser extension.",
+  "scripts": {
+    "validate": "node validate.mjs",
+    "build": "node build.mjs"
+  }
+}

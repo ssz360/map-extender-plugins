@@ -1,0 +1,36 @@
+{
+  "id": "extender:open-elsewhere",
+  "name": "Open This View Elsewhere",
+  "description": "Jump from the current map to the same coordinates and zoom on OpenStreetMap, Google, Bing, OpenRailwayMap and others.",
+  "version": "1.0.0",
+  "author": "Map Extender",
+  "usage": "Pick a service from the control",
+  "matchPatterns": [
+    "*://*/*"
+  ],
+  "settingsSchema": [
+    {
+      "key": "services",
+      "label": "Services (comma-separated keys)",
+      "type": "text",
+      "default": "osm,google,openrailwaymap,geohack"
+    },
+    {
+      "key": "position",
+      "label": "Control position",
+      "type": "select",
+      "default": "top-left",
+      "options": [
+        "top-left",
+        "top-right",
+        "bottom-left",
+        "bottom-right"
+      ]
+    }
+  ],
+  "settings": {
+    "services": "osm,google,openrailwaymap,geohack",
+    "position": "top-left"
+  },
+  "screenshots": []
+}

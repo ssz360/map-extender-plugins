@@ -1,0 +1,36 @@
+{
+  "id": "extender:waymarked-trails",
+  "name": "Waymarked Trails Overlay",
+  "description": "Hiking, cycling, riding and piste route networks from waymarkedtrails.org, drawn over the existing map.",
+  "version": "1.0.0",
+  "author": "Map Extender",
+  "usage": "Always-on map overlay",
+  "matchPatterns": [
+    "*://*/*"
+  ],
+  "settingsSchema": [
+    {
+      "key": "route",
+      "label": "Route network",
+      "type": "select",
+      "default": "hiking",
+      "options": [
+        "hiking",
+        "cycling",
+        "riding",
+        "slopes"
+      ]
+    },
+    {
+      "key": "opacity",
+      "label": "Opacity (0–1)",
+      "type": "number",
+      "default": 1
+    }
+  ],
+  "settings": {
+    "route": "hiking",
+    "opacity": 1
+  },
+  "screenshots": []
+}

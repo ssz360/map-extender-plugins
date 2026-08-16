@@ -1,0 +1,50 @@
+name: Registry
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate every plugin
+        run: node validate.mjs
+      - name: Build registry.json
+        env:
+          REGISTRY_BASE_URL: ${{ vars.REGISTRY_BASE_URL }}
+        run: node build.mjs
+      # A PR that changes a plugin but not registry.json would publish stale code, so make the
+      # rebuild authoritative and fail if the committed file does not match.
+      - name: Check registry.json is up to date
+        run: git diff --exit-code registry.json
+
+  publish:
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deploy
+        uses: actions/deploy-pages@v4

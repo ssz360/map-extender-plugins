@@ -1,0 +1,268 @@
+{
+  "formatVersion": 1,
+  "name": "Map Extender Plugins",
+  "description": "Community plugins for the Map Extender browser extension.",
+  "homepage": "https://REPLACE-ME.github.io/map-extender-plugins",
+  "updatedAt": "2026-08-16",
+  "plugins": [
+    {
+      "id": "extender:coordinate-inspector",
+      "name": "Coordinate Inspector",
+      "description": "Live latitude/longitude readout in decimal and DMS, plus the slippy-map tile under the pointer. Right-click copies.",
+      "version": "1.0.0",
+      "author": "Map Extender",
+      "usage": "Right-click the map to copy coordinates",
+      "matchPatterns": [
+        "*://*/*"
+      ],
+      "settingsSchema": [
+        {
+          "key": "decimals",
+          "label": "Decimal places",
+          "type": "number",
+          "default": 5
+        },
+        {
+          "key": "position",
+          "label": "Control position",
+          "type": "select",
+          "default": "bottom-right",
+          "options": [
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right"
+          ]
+        }
+      ],
+      "settings": {
+        "decimals": 5,
+        "position": "bottom-right"
+      },
+      "screenshots": [],
+      "code": "const CONTROL_ID = 'coordinate-inspector';\nconst PANEL = 'font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;color:#111;' +\n    'border:1px solid #d4d4d8;border-radius:6px;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);' +\n    'min-width:210px;font-variant-numeric:tabular-nums';\n/** Slippy-map tile the coordinate falls in, at the current zoom. */\nfunction tileForLatLng(position, zoom) {\n    const n = Math.pow(2, zoom);\n    const latRad = (position.lat * Math.PI) / 180;\n    const x = Math.floor(((position.lng + 180) / 360) * n);\n    const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n);\n    return { x: x, y: y };\n}\n/** Degrees to degrees/minutes/seconds, e.g. 48°08'13.2\"N */\nfunction toDms(value, positive, negative) {\n    const hemisphere = value >= 0 ? positive : negative;\n    const abs = Math.abs(value);\n    const degrees = Math.floor(abs);\n    const minutesFull = (abs - degrees) * 60;\n    const minutes = Math.floor(minutesFull);\n    const seconds = ((minutesFull - minutes) * 60).toFixed(1);\n    return degrees + '°' + minutes + \"'\" + seconds + '\"' + hemisphere;\n}\nplugin.mapHook.onHook(function () {\n    const decimals = Math.min(8, Math.max(2, Number(plugin.settings.get('decimals')) || 5));\n    plugin.mapHook.createControl({\n        id: CONTROL_ID,\n        position: String(plugin.settings.get('position') || 'bottom-right'),\n        html: '<div style=\"' + PANEL + '\">' +\n            '<div data-coord-latlng>Move the pointer over the map</div>' +\n            '<div data-coord-dms style=\"color:#71717a\"></div>' +\n            '<div data-coord-tile style=\"color:#71717a\"></div>' +\n            '<div data-coord-hint style=\"margin-top:4px;color:#71717a\">Right-click the map to copy</div>' +\n            '</div>',\n    });\n    const root = document.querySelector('[data-map-control-id=\"' + CONTROL_ID + '\"]');\n    if (!root) {\n        plugin.error('Coordinate inspector: control markup not found in the page');\n        return;\n    }\n    const latLngOut = root.querySelector('[data-coord-latlng]');\n    const dmsOut = root.querySelector('[data-coord-dms]');\n    const tileOut = root.querySelector('[data-coord-tile]');\n    const hintOut = root.querySelector('[data-coord-hint]');\n    function show(position) {\n        if (latLngOut) {\n            latLngOut.textContent = position.lat.toFixed(decimals) + ', ' + position.lng.toFixed(decimals);\n        }\n        if (dmsOut) {\n            dmsOut.textContent = toDms(position.lat, 'N', 'S') + ' ' + toDms(position.lng, 'E', 'W');\n        }\n        if (tileOut) {\n            const zoom = plugin.mapHook.getZoom();\n            if (typeof zoom === 'number') {\n                const tile = tileForLatLng(position, Math.round(zoom));\n                tileOut.textContent = 'tile ' + Math.round(zoom) + '/' + tile.x + '/' + tile.y;\n            }\n            else {\n                tileOut.textContent = '';\n            }\n        }\n    }\n    plugin.mapHook.onMouseMove(show);\n    plugin.mapHook.onRightClick(function (position) {\n        show(position);\n        const text = position.lat.toFixed(decimals) + ', ' + position.lng.toFixed(decimals);\n        if (!navigator.clipboard) {\n            if (hintOut)\n                hintOut.textContent = text;\n            return;\n        }\n        navigator.clipboard\n            .writeText(text)\n            .then(function () {\n            if (hintOut)\n                hintOut.textContent = 'Copied ' + text;\n        })\n            .catch(function () {\n            // Some sites block clipboard writes; showing the value still lets the user copy it.\n            if (hintOut)\n                hintOut.textContent = text;\n        });\n    });\n    plugin.log('Coordinate inspector ready');\n});\n"
+    },
+    {
+      "id": "extender:dark-map",
+      "name": "Dark Map",
+      "description": "Applies a dark filter to the map tiles only, leaving your markers and overlays in their original colours.",
+      "version": "1.0.0",
+      "author": "Map Extender",
+      "usage": "Always-on map filter",
+      "matchPatterns": [
+        "*://*/*"
+      ],
+      "settingsSchema": [
+        {
+          "key": "brightness",
+          "label": "Brightness (0.3–1.5)",
+          "type": "number",
+          "default": 0.9
+        },
+        {
+          "key": "contrast",
+          "label": "Contrast (0.5–2)",
+          "type": "number",
+          "default": 1.05
+        }
+      ],
+      "settings": {
+        "brightness": 0.9,
+        "contrast": 1.05
+      },
+      "screenshots": [],
+      "code": "const STYLE_ID = 'map-ext-dark-map';\nplugin.mapHook.onHook(function () {\n    let brightness = Number(plugin.settings.get('brightness'));\n    if (isNaN(brightness) || brightness < 0.3 || brightness > 1.5)\n        brightness = 0.9;\n    let contrast = Number(plugin.settings.get('contrast'));\n    if (isNaN(contrast) || contrast < 0.5 || contrast > 2)\n        contrast = 1.05;\n    // invert + hue-rotate keeps landmasses dark while leaving hues roughly recognisable.\n    const filter = 'invert(1) hue-rotate(180deg) brightness(' + brightness + ') contrast(' + contrast + ')';\n    const css = \n    // Leaflet: filter the tile pane only, so markers and overlays keep their real colours.\n    '.leaflet-tile-pane{filter:' + filter + '}' +\n        // Google Maps draws its base raster into the first child of .gm-style.\n        '.gm-style > div:first-child > div:first-child{filter:' + filter + '}';\n    const existing = document.getElementById(STYLE_ID);\n    if (existing)\n        existing.remove();\n    const style = document.createElement('style');\n    style.id = STYLE_ID;\n    style.textContent = css;\n    document.head.appendChild(style);\n    // Injected DOM is not tracked as a layer, so it has to be cleaned up explicitly.\n    plugin.onDispose(function () {\n        style.remove();\n    });\n    plugin.log('Dark map applied — brightness', brightness, 'contrast', contrast);\n});\n"
+    },
+    {
+      "id": "extender:open-elsewhere",
+      "name": "Open This View Elsewhere",
+      "description": "Jump from the current map to the same coordinates and zoom on OpenStreetMap, Google, Bing, OpenRailwayMap and others.",
+      "version": "1.0.0",
+      "author": "Map Extender",
+      "usage": "Pick a service from the control",
+      "matchPatterns": [
+        "*://*/*"
+      ],
+      "settingsSchema": [
+        {
+          "key": "services",
+          "label": "Services (comma-separated keys)",
+          "type": "text",
+          "default": "osm,google,openrailwaymap,geohack"
+        },
+        {
+          "key": "position",
+          "label": "Control position",
+          "type": "select",
+          "default": "top-left",
+          "options": [
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right"
+          ]
+        }
+      ],
+      "settings": {
+        "services": "osm,google,openrailwaymap,geohack",
+        "position": "top-left"
+      },
+      "screenshots": [],
+      "code": "const CONTROL_ID = 'open-elsewhere';\nconst PANEL = 'font:12px/1.45 system-ui,sans-serif;background:#fff;color:#111;border:1px solid #d4d4d8;' +\n    'border-radius:6px;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.15)';\nconst LINK = 'display:block;padding:4px 6px;color:#1d4ed8;text-decoration:none;border-radius:4px;white-space:nowrap';\n// Formats confirmed against each site's own permalink builder.\nconst TARGETS = [\n    {\n        key: 'osm',\n        label: 'OpenStreetMap',\n        url: (lat, lng, z) => 'https://www.openstreetmap.org/#map=' + z + '/' + lat.toFixed(5) + '/' + lng.toFixed(5),\n    },\n    {\n        key: 'google',\n        label: 'Google Maps',\n        url: (lat, lng, z) => 'https://www.google.com/maps/@' + lat.toFixed(6) + ',' + lng.toFixed(6) + ',' + z + 'z',\n    },\n    {\n        key: 'bing',\n        label: 'Bing Maps',\n        url: (lat, lng, z) => 'https://www.bing.com/maps?cp=' + lat.toFixed(6) + '~' + lng.toFixed(6) + '&lvl=' + z,\n    },\n    {\n        key: 'openrailwaymap',\n        label: 'OpenRailwayMap',\n        url: (lat, lng, z) => 'https://www.openrailwaymap.org/?style=standard&lat=' + lat.toFixed(6) + '&lon=' + lng.toFixed(6) + '&zoom=' + z,\n    },\n    {\n        key: 'opentopomap',\n        label: 'OpenTopoMap',\n        url: (lat, lng, z) => 'https://opentopomap.org/#map=' + z + '/' + lat.toFixed(5) + '/' + lng.toFixed(5),\n    },\n    {\n        key: 'mapillary',\n        label: 'Mapillary',\n        url: (lat, lng, z) => 'https://www.mapillary.com/app/?lat=' + lat.toFixed(6) + '&lng=' + lng.toFixed(6) + '&z=' + z,\n    },\n    {\n        key: 'geohack',\n        label: 'GeoHack (all services)',\n        url: (lat, lng) => 'https://geohack.toolforge.org/geohack.php?params=' + lat.toFixed(6) + '_N_' + lng.toFixed(6) + '_E',\n    },\n];\nplugin.mapHook.onHook(function () {\n    const enabledRaw = String(plugin.settings.get('services') || 'osm,google,openrailwaymap,geohack');\n    const enabled = enabledRaw.split(',').map(function (part) { return part.trim(); });\n    const targets = TARGETS.filter(function (t) { return enabled.indexOf(t.key) !== -1; });\n    const shown = targets.length > 0 ? targets : TARGETS;\n    let markup = '<div style=\"' + PANEL + '\">' +\n        '<div style=\"font-weight:600;margin-bottom:4px\">Open this view in…</div>';\n    for (let i = 0; i < shown.length; i++) {\n        markup += '<a href=\"#\" data-open-target=\"' + shown[i].key + '\" style=\"' + LINK + '\">' + shown[i].label + '</a>';\n    }\n    markup += '<div data-open-coords style=\"margin-top:6px;color:#71717a;font-variant-numeric:tabular-nums\"></div></div>';\n    plugin.mapHook.createControl({\n        id: CONTROL_ID,\n        position: String(plugin.settings.get('position') || 'top-left'),\n        html: markup,\n    });\n    const root = document.querySelector('[data-map-control-id=\"' + CONTROL_ID + '\"]');\n    if (!root) {\n        plugin.error('Open elsewhere: control markup not found in the page');\n        return;\n    }\n    const coords = root.querySelector('[data-open-coords]');\n    function currentView() {\n        const center = plugin.mapHook.getCenter();\n        if (!center)\n            return null;\n        const zoom = plugin.mapHook.getZoom();\n        return { lat: center.lat, lng: center.lng, zoom: typeof zoom === 'number' ? Math.round(zoom) : 14 };\n    }\n    function refreshCoords() {\n        if (!coords)\n            return;\n        const view = currentView();\n        coords.textContent = view ? view.lat.toFixed(5) + ', ' + view.lng.toFixed(5) + ' · z' + view.zoom : '';\n    }\n    for (let i = 0; i < shown.length; i++) {\n        const target = shown[i];\n        const link = root.querySelector('[data-open-target=\"' + target.key + '\"]');\n        if (!link)\n            continue;\n        link.addEventListener('click', function (event) {\n            event.preventDefault();\n            const view = currentView();\n            if (!view) {\n                plugin.warn('Open elsewhere: the map has no centre yet');\n                return;\n            }\n            // Opened from a real click, so this is a user gesture and not treated as a popup.\n            window.open(target.url(view.lat, view.lng, view.zoom), '_blank', 'noopener,noreferrer');\n        });\n    }\n    refreshCoords();\n    plugin.mapHook.onMoveEnd(refreshCoords);\n    plugin.mapHook.onZoomEnd(refreshCoords);\n    plugin.log('Open-elsewhere control ready with', shown.length, 'targets');\n});\n"
+    },
+    {
+      "id": "extender:openseamap",
+      "name": "OpenSeaMap Seamarks",
+      "description": "Nautical seamark overlay from OpenSeaMap — buoys, lights, harbours and navigation aids. Sparse inland by design.",
+      "version": "1.0.0",
+      "author": "Map Extender",
+      "usage": "Always-on map overlay",
+      "matchPatterns": [
+        "*://*/*"
+      ],
+      "settingsSchema": [
+        {
+          "key": "opacity",
+          "label": "Opacity (0–1)",
+          "type": "number",
+          "default": 1
+        }
+      ],
+      "settings": {
+        "opacity": 1
+      },
+      "screenshots": [],
+      "code": "plugin.mapHook.onHook(function () {\n    let opacity = Number(plugin.settings.get('opacity'));\n    if (isNaN(opacity) || opacity < 0 || opacity > 1)\n        opacity = 1;\n    // Seamark tiles are symbol-only and transparent, so they are mostly empty inland — that is\n    // expected, not a failure. No Referer header is required by this server.\n    plugin.mapHook.createTileLayer({\n        urlTemplate: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',\n        attribution: '© OpenSeaMap contributors (CC-BY-SA)',\n        opacity: opacity,\n        tileSize: 256,\n        minZoom: 0,\n        maxZoom: 18,\n    });\n    plugin.log('OpenSeaMap seamark overlay attached — opacity:', opacity);\n});\n"
+    },
+    {
+      "id": "extender:osm-poi",
+      "name": "OSM Points of Interest",
+      "description": "One configurable OpenStreetMap POI layer — EV charging, drinking water, toilets, bicycle parking, pharmacies, cafes, supermarkets or viewpoints.",
+      "version": "1.0.0",
+      "author": "Map Extender",
+      "usage": "Zoom in, then pan to load",
+      "matchPatterns": [
+        "*://*/*"
+      ],
+      "settingsSchema": [
+        {
+          "key": "category",
+          "label": "Category",
+          "type": "select",
+          "default": "charging",
+          "options": [
+            "charging",
+            "drinking_water",
+            "toilets",
+            "bicycle_parking",
+            "pharmacy",
+            "cafe",
+            "supermarket",
+            "viewpoint"
+          ]
+        },
+        {
+          "key": "minZoom",
+          "label": "Minimum zoom to query",
+          "type": "number",
+          "default": 14
+        },
+        {
+          "key": "color",
+          "label": "Marker colour (blank = per category)",
+          "type": "text",
+          "default": ""
+        }
+      ],
+      "settings": {
+        "category": "charging",
+        "minZoom": 14,
+        "color": ""
+      },
+      "screenshots": [],
+      "code": "/**\n * One plugin covering many POI types, rather than one plugin per type. Overpass is a donated\n * public service and this extension already ships three plugins that query it, so every extra\n * always-on layer is extra load on it.\n */\nconst CATEGORIES = [\n    { key: 'charging', label: 'EV charging', filter: '\"amenity\"=\"charging_station\"', color: '#16a34a' },\n    { key: 'drinking_water', label: 'Drinking water', filter: '\"amenity\"=\"drinking_water\"', color: '#0284c7' },\n    { key: 'toilets', label: 'Toilets', filter: '\"amenity\"=\"toilets\"', color: '#7c3aed' },\n    { key: 'bicycle_parking', label: 'Bicycle parking', filter: '\"amenity\"=\"bicycle_parking\"', color: '#2563eb' },\n    { key: 'pharmacy', label: 'Pharmacy', filter: '\"amenity\"=\"pharmacy\"', color: '#dc2626' },\n    { key: 'cafe', label: 'Cafe', filter: '\"amenity\"=\"cafe\"', color: '#b45309' },\n    { key: 'supermarket', label: 'Supermarket', filter: '\"shop\"=\"supermarket\"', color: '#ca8a04' },\n    { key: 'viewpoint', label: 'Viewpoint', filter: '\"tourism\"=\"viewpoint\"', color: '#0d9488' },\n];\nlet sequence = 0;\nlet debounceTimer;\nplugin.mapHook.onHook(function () {\n    const categoryKey = String(plugin.settings.get('category') || 'charging');\n    let category = CATEGORIES[0];\n    for (let i = 0; i < CATEGORIES.length; i++) {\n        if (CATEGORIES[i].key === categoryKey)\n            category = CATEGORIES[i];\n    }\n    const color = String(plugin.settings.get('color') || '') || category.color;\n    let minZoom = Number(plugin.settings.get('minZoom'));\n    if (isNaN(minZoom) || minZoom < 8 || minZoom > 20)\n        minZoom = 14;\n    const layer = plugin.mapHook.createMarkerLayer();\n    function load(bounds) {\n        if (!bounds) {\n            layer.clear();\n            return;\n        }\n        // Below this zoom the bounding box covers a whole region and the query gets expensive\n        // for Overpass while returning more markers than anyone can read.\n        const zoom = plugin.mapHook.getZoom();\n        if (typeof zoom === 'number' && zoom < minZoom) {\n            layer.clear();\n            plugin.log('Zoom in to ' + minZoom + '+ to load ' + category.label.toLowerCase());\n            return;\n        }\n        const requestSequence = ++sequence;\n        const bbox = [bounds.south, bounds.west, bounds.north, bounds.east].join(',');\n        const query = '[out:json][timeout:25];(' +\n            'node[' + category.filter + '](' + bbox + ');' +\n            'way[' + category.filter + '](' + bbox + ');' +\n            ');out center;';\n        plugin\n            .fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: query })\n            .then(function (response) {\n            if (!response.ok)\n                throw new Error('Overpass returned HTTP ' + response.status);\n            return response.json();\n        })\n            .then(function (data) {\n            if (requestSequence !== sequence)\n                return;\n            layer.clear();\n            const elements = data.elements || [];\n            let drawn = 0;\n            for (let i = 0; i < elements.length; i++) {\n                const element = elements[i];\n                const lat = typeof element.lat === 'number' ? element.lat : element.center && element.center.lat;\n                const lon = typeof element.lon === 'number' ? element.lon : element.center && element.center.lon;\n                if (typeof lat !== 'number' || typeof lon !== 'number')\n                    continue;\n                const tags = element.tags || {};\n                const name = tags.name || category.label;\n                layer.addMarker({\n                    id: category.key + '-' + element.type + '-' + i,\n                    lat: lat,\n                    lng: lon,\n                    color: color,\n                    popup: name,\n                    tooltip: name,\n                });\n                drawn++;\n            }\n            plugin.log('Loaded ' + drawn + ' ' + category.label.toLowerCase() + ' markers');\n        })\n            .catch(function (err) {\n            if (requestSequence !== sequence)\n                return;\n            plugin.error(category.label + ' error:', err instanceof Error ? err.message : String(err));\n        });\n    }\n    function schedule(bounds) {\n        clearTimeout(debounceTimer);\n        debounceTimer = setTimeout(function () {\n            load(bounds);\n        }, 600);\n    }\n    schedule(plugin.mapHook.getBounds());\n    plugin.mapHook.onMoveEnd(schedule);\n    plugin.onDispose(function () {\n        clearTimeout(debounceTimer);\n        sequence++;\n    });\n});\n"
+    },
+    {
+      "id": "extender:railways",
+      "name": "Rail Tracks",
+      "description": "Draws railway polylines via the OpenStreetMap Overpass API.",
+      "version": "1.0.0",
+      "author": "Map Extender",
+      "usage": "Updates as you pan the map",
+      "matchPatterns": [
+        "*://*/*"
+      ],
+      "settingsSchema": [],
+      "settings": {},
+      "screenshots": [],
+      "code": "let seq = 0;\nlet debounce;\nplugin.mapHook.onHook(function () {\n    const layer = plugin.mapHook.createPolylineLayer();\n    function load(bounds) {\n        if (!bounds) {\n            layer.clear();\n            return;\n        }\n        const requestSeq = ++seq;\n        const bbox = [bounds.south, bounds.west, bounds.north, bounds.east].join(',');\n        const query = `[out:json][timeout:25];\\n(\\n  way[\"railway\"](${bbox});\\n);\\nout geom;`;\n        plugin\n            .fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: query })\n            .then(function (res) {\n            return res.json();\n        })\n            .then(function (data) {\n            if (requestSeq !== seq)\n                return;\n            layer.clear();\n            const elements = data.elements || [];\n            for (let i = 0; i < elements.length; i++) {\n                const el = elements[i];\n                if (el.type !== 'way' || !Array.isArray(el.geometry))\n                    continue;\n                const path = [];\n                for (let j = 0; j < el.geometry.length; j++) {\n                    const pt = el.geometry[j];\n                    if (typeof pt.lat === 'number' && typeof pt.lon === 'number') {\n                        path.push({ lat: pt.lat, lng: pt.lon });\n                    }\n                }\n                if (path.length > 1)\n                    layer.addPolyline({ path, color: 'red', weight: 2 });\n            }\n            plugin.log('Loaded ' + elements.length + ' railway segments');\n        })\n            .catch(function (e) {\n            const message = e instanceof Error ? e.message : String(e);\n            plugin.error('Railways error:', message);\n        });\n    }\n    function schedule(bounds) {\n        clearTimeout(debounce);\n        debounce = setTimeout(function () {\n            load(bounds);\n        }, 500);\n    }\n    schedule(plugin.mapHook.getBounds());\n    plugin.mapHook.onMoveEnd(schedule);\n});\n"
+    },
+    {
+      "id": "extender:saved-views",
+      "name": "Saved Views",
+      "description": "Bookmark map positions by name and jump back to them later. Stored locally per plugin.",
+      "version": "1.0.0",
+      "author": "Map Extender",
+      "usage": "Save… stores the current view",
+      "matchPatterns": [
+        "*://*/*"
+      ],
+      "settingsSchema": [
+        {
+          "key": "position",
+          "label": "Control position",
+          "type": "select",
+          "default": "bottom-left",
+          "options": [
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right"
+          ]
+        }
+      ],
+      "settings": {
+        "position": "bottom-left"
+      },
+      "screenshots": [],
+      "code": "const CONTROL_ID = 'saved-views';\nconst STORE_KEY = 'views';\nconst PANEL = 'font:12px/1.45 system-ui,sans-serif;background:#fff;color:#111;border:1px solid #d4d4d8;' +\n    'border-radius:6px;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);min-width:200px';\nconst BTN = 'font:12px/1 system-ui,sans-serif;padding:5px 9px;border:1px solid #d4d4d8;border-radius:4px;' +\n    'background:#f4f4f5;color:#111;cursor:pointer;margin-right:4px';\nplugin.mapHook.onHook(function () {\n    plugin.mapHook.createControl({\n        id: CONTROL_ID,\n        position: String(plugin.settings.get('position') || 'bottom-left'),\n        html: '<div style=\"' + PANEL + '\">' +\n            '<div style=\"font-weight:600;margin-bottom:6px\">Saved views</div>' +\n            '<select data-views-list style=\"width:100%;margin-bottom:6px;font:12px system-ui,sans-serif;padding:4px\"></select>' +\n            '<div>' +\n            '<button type=\"button\" data-views-go style=\"' + BTN + '\">Go</button>' +\n            '<button type=\"button\" data-views-save style=\"' + BTN + '\">Save…</button>' +\n            '<button type=\"button\" data-views-delete style=\"' + BTN + '\">Delete</button>' +\n            '</div>' +\n            '<div data-views-status style=\"margin-top:6px;color:#71717a\"></div>' +\n            '</div>',\n    });\n    const root = document.querySelector('[data-map-control-id=\"' + CONTROL_ID + '\"]');\n    if (!root) {\n        plugin.error('Saved views: control markup not found in the page');\n        return;\n    }\n    const list = root.querySelector('[data-views-list]');\n    const status = root.querySelector('[data-views-status]');\n    let views = [];\n    function setStatus(text) {\n        if (status)\n            status.textContent = text;\n    }\n    function renderList() {\n        if (!list)\n            return;\n        list.innerHTML = '';\n        if (views.length === 0) {\n            const option = document.createElement('option');\n            option.textContent = 'No saved views yet';\n            option.value = '';\n            list.appendChild(option);\n            return;\n        }\n        for (let i = 0; i < views.length; i++) {\n            const option = document.createElement('option');\n            option.value = String(i);\n            option.textContent = views[i].name + '  (z' + views[i].zoom + ')';\n            list.appendChild(option);\n        }\n    }\n    function persist() {\n        return plugin.store.set(STORE_KEY, views).catch(function (err) {\n            plugin.error('Saved views: could not save —', err instanceof Error ? err.message : String(err));\n        });\n    }\n    plugin.store\n        .get(STORE_KEY)\n        .then(function (stored) {\n        if (Array.isArray(stored))\n            views = stored;\n        renderList();\n        setStatus(views.length + ' saved');\n    })\n        .catch(function (err) {\n        plugin.error('Saved views: could not load —', err instanceof Error ? err.message : String(err));\n        renderList();\n    });\n    const goButton = root.querySelector('[data-views-go]');\n    const saveButton = root.querySelector('[data-views-save]');\n    const deleteButton = root.querySelector('[data-views-delete]');\n    if (goButton) {\n        goButton.addEventListener('click', function () {\n            if (!list || !list.value)\n                return;\n            const view = views[Number(list.value)];\n            if (!view)\n                return;\n            plugin.mapHook.setView({ lat: view.lat, lng: view.lng }, view.zoom);\n            setStatus('Moved to ' + view.name);\n        });\n    }\n    if (saveButton) {\n        saveButton.addEventListener('click', function () {\n            const center = plugin.mapHook.getCenter();\n            if (!center) {\n                setStatus('The map has no centre yet');\n                return;\n            }\n            const zoom = plugin.mapHook.getZoom();\n            const suggested = 'View ' + (views.length + 1);\n            const name = window.prompt('Name this view', suggested);\n            if (!name)\n                return;\n            views.push({\n                name: name,\n                lat: center.lat,\n                lng: center.lng,\n                zoom: typeof zoom === 'number' ? Math.round(zoom) : 14,\n            });\n            renderList();\n            setStatus(views.length + ' saved');\n            void persist();\n        });\n    }\n    if (deleteButton) {\n        deleteButton.addEventListener('click', function () {\n            if (!list || !list.value)\n                return;\n            const index = Number(list.value);\n            if (!views[index])\n                return;\n            const removed = views.splice(index, 1)[0];\n            renderList();\n            setStatus('Deleted ' + removed.name);\n            void persist();\n        });\n    }\n    plugin.log('Saved views ready');\n});\n"
+    },
+    {
+      "id": "extender:waymarked-trails",
+      "name": "Waymarked Trails Overlay",
+      "description": "Hiking, cycling, riding and piste route networks from waymarkedtrails.org, drawn over the existing map.",
+      "version": "1.0.0",
+      "author": "Map Extender",
+      "usage": "Always-on map overlay",
+      "matchPatterns": [
+        "*://*/*"
+      ],
+      "settingsSchema": [
+        {
+          "key": "route",
+          "label": "Route network",
+          "type": "select",
+          "default": "hiking",
+          "options": [
+            "hiking",
+            "cycling",
+            "riding",
+            "slopes"
+          ]
+        },
+        {
+          "key": "opacity",
+          "label": "Opacity (0–1)",
+          "type": "number",
+          "default": 1
+        }
+      ],
+      "settings": {
+        "route": "hiking",
+        "opacity": 1
+      },
+      "screenshots": [],
+      "code": "// Waymarked Trails serves a transparent route overlay per activity, designed to sit on top of\n// an existing basemap. Verified live: all four render and none require a Referer header.\nconst ROUTES = ['hiking', 'cycling', 'riding', 'slopes'];\nplugin.mapHook.onHook(function () {\n    let route = String(plugin.settings.get('route') || 'hiking');\n    if (ROUTES.indexOf(route) === -1)\n        route = 'hiking';\n    let opacity = Number(plugin.settings.get('opacity'));\n    if (isNaN(opacity) || opacity < 0 || opacity > 1)\n        opacity = 1;\n    plugin.mapHook.createTileLayer({\n        urlTemplate: 'https://tile.waymarkedtrails.org/' + route + '/{z}/{x}/{y}.png',\n        attribution: '© waymarkedtrails.org, OpenStreetMap contributors (CC-BY-SA)',\n        opacity: opacity,\n        tileSize: 256,\n        minZoom: 0,\n        maxZoom: 18,\n    });\n    plugin.log('Waymarked Trails overlay attached — route:', route, 'opacity:', opacity);\n});\n"
+    }
+  ]
+}

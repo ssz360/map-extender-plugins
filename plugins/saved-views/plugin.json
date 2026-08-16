@@ -1,0 +1,29 @@
+{
+  "id": "extender:saved-views",
+  "name": "Saved Views",
+  "description": "Bookmark map positions by name and jump back to them later. Stored locally per plugin.",
+  "version": "1.0.0",
+  "author": "Map Extender",
+  "usage": "Save… stores the current view",
+  "matchPatterns": [
+    "*://*/*"
+  ],
+  "settingsSchema": [
+    {
+      "key": "position",
+      "label": "Control position",
+      "type": "select",
+      "default": "bottom-left",
+      "options": [
+        "top-left",
+        "top-right",
+        "bottom-left",
+        "bottom-right"
+      ]
+    }
+  ],
+  "settings": {
+    "position": "bottom-left"
+  },
+  "screenshots": []
+}

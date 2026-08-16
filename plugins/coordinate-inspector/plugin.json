@@ -1,0 +1,36 @@
+{
+  "id": "extender:coordinate-inspector",
+  "name": "Coordinate Inspector",
+  "description": "Live latitude/longitude readout in decimal and DMS, plus the slippy-map tile under the pointer. Right-click copies.",
+  "version": "1.0.0",
+  "author": "Map Extender",
+  "usage": "Right-click the map to copy coordinates",
+  "matchPatterns": [
+    "*://*/*"
+  ],
+  "settingsSchema": [
+    {
+      "key": "decimals",
+      "label": "Decimal places",
+      "type": "number",
+      "default": 5
+    },
+    {
+      "key": "position",
+      "label": "Control position",
+      "type": "select",
+      "default": "bottom-right",
+      "options": [
+        "top-left",
+        "top-right",
+        "bottom-left",
+        "bottom-right"
+      ]
+    }
+  ],
+  "settings": {
+    "decimals": 5,
+    "position": "bottom-right"
+  },
+  "screenshots": []
+}
