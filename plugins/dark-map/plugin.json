@@ -1,8 +1,8 @@
 {
   "id": "extender:dark-map",
   "name": "Dark Map",
-  "description": "Applies a dark filter to the map tiles only, leaving your markers and overlays in their original colours.",
-  "version": "1.0.0",
+  "description": "Applies a dark filter to the map. On Leaflet this only affects the map tiles, leaving your markers untouched; Google Maps has no equivalent hook, so there the whole map — including markers and controls — is filtered.",
+  "version": "1.0.1",
   "author": "Map Extender",
   "usage": "Always-on map filter",
   "matchPatterns": [

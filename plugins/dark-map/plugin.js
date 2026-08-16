@@ -1,28 +1,39 @@
 const STYLE_ID = 'map-ext-dark-map';
+
 plugin.mapHook.onHook(function () {
-    let brightness = Number(plugin.settings.get('brightness'));
-    if (isNaN(brightness) || brightness < 0.3 || brightness > 1.5)
-        brightness = 0.9;
-    let contrast = Number(plugin.settings.get('contrast'));
-    if (isNaN(contrast) || contrast < 0.5 || contrast > 2)
-        contrast = 1.05;
-    // invert + hue-rotate keeps landmasses dark while leaving hues roughly recognisable.
-    const filter = 'invert(1) hue-rotate(180deg) brightness(' + brightness + ') contrast(' + contrast + ')';
-    const css = 
-    // Leaflet: filter the tile pane only, so markers and overlays keep their real colours.
+  let brightness = Number(plugin.settings.get('brightness'));
+  if (isNaN(brightness) || brightness < 0.3 || brightness > 1.5) brightness = 0.9;
+
+  let contrast = Number(plugin.settings.get('contrast'));
+  if (isNaN(contrast) || contrast < 0.5 || contrast > 2) contrast = 1.05;
+
+  // invert + hue-rotate keeps landmasses dark while leaving hues roughly recognisable.
+  const filter = 'invert(1) hue-rotate(180deg) brightness(' + brightness + ') contrast(' + contrast + ')';
+
+  const css =
+    // Leaflet exposes a real, stable class for just the tile layer, so only that gets
+    // filtered — markers, popups and Leaflet's own controls keep their normal colours.
     '.leaflet-tile-pane{filter:' + filter + '}' +
-        // Google Maps draws its base raster into the first child of .gm-style.
-        '.gm-style > div:first-child > div:first-child{filter:' + filter + '}';
-    const existing = document.getElementById(STYLE_ID);
-    if (existing)
-        existing.remove();
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    style.textContent = css;
-    document.head.appendChild(style);
-    // Injected DOM is not tracked as a layer, so it has to be cleaned up explicitly.
-    plugin.onDispose(function () {
-        style.remove();
-    });
-    plugin.log('Dark map applied — brightness', brightness, 'contrast', contrast);
+    // Google Maps has no equivalent public hook. Tiles, markers and controls are all
+    // rendered inside .gm-style with an internal structure Google does not document and
+    // changes between versions — an earlier attempt at guessing a narrower selector
+    // (.gm-style > div:first-child > div:first-child) turned out not to match reality.
+    // Filtering the whole container is the only option that reliably works, which means
+    // markers and Google's own UI controls get inverted too on this engine.
+    '.gm-style{filter:' + filter + '}';
+
+  const existing = document.getElementById(STYLE_ID);
+  if (existing) existing.remove();
+
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  // Injected DOM is not tracked as a layer, so it has to be cleaned up explicitly.
+  plugin.onDispose(function () {
+    style.remove();
+  });
+
+  plugin.log('Dark map applied — brightness', brightness, 'contrast', contrast);
 });
