@@ -1,5 +1,15 @@
 const STYLE_ID = 'map-ext-dark-map';
 
+// script-src doesn't apply to this plugin's own execution, but style-src still applies to any
+// <style> it creates — a nonce-based CSP rejects one with no nonce. Nonces aren't bound to the
+// element that first carried them, so copying one already on the page onto our own <style> is a
+// legitimate way to interoperate with that CSP, not a bypass. Does nothing for hash-based CSP,
+// since a hash has to be precomputed for exact, known-ahead-of-time content.
+function pageNonce() {
+  var nonced = document.querySelector('script[nonce], style[nonce], link[nonce]');
+  return nonced ? nonced.nonce : undefined;
+}
+
 plugin.mapHook.onHook(function () {
   let brightness = Number(plugin.settings.get('brightness'));
   if (isNaN(brightness) || brightness < 0.3 || brightness > 1.5) brightness = 0.9;
@@ -27,6 +37,8 @@ plugin.mapHook.onHook(function () {
 
   const style = document.createElement('style');
   style.id = STYLE_ID;
+  const nonce = pageNonce();
+  if (nonce) style.nonce = nonce;
   style.textContent = css;
   document.head.appendChild(style);
 
