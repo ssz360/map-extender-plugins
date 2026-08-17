@@ -43,5 +43,7 @@
     "minZoom": 14,
     "color": ""
   },
-  "screenshots": []
+  "screenshots": [
+    "https://ssz360.github.io/map-extender-plugins/plugins/osm-poi/screenshots/OSM-Points-of-Interest.jpeg"
+  ]
 }

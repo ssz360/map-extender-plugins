@@ -281,15 +281,96 @@
     flex: 1;
   }
 
-  .shot {
+  .shot-btn {
+    position: relative;
+    display: block;
     margin-top: .9rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+    border-radius: calc(var(--radius) - 2px);
+  }
+  .shot-btn:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+
+  .shot {
+    display: block;
     width: 100%;
     height: 9rem;
     object-fit: cover;
+    object-position: top;
     border: 1px solid hsl(var(--border));
     border-radius: calc(var(--radius) - 2px);
     background: hsl(var(--muted));
   }
+  .shot-btn:hover .shot { border-color: hsl(var(--ring) / 0.7); }
+
+  .shot-count {
+    position: absolute;
+    right: .5rem;
+    bottom: .5rem;
+    padding: .15rem .45rem;
+    border-radius: 999px;
+    background: hsl(240 10% 3.9% / 0.75);
+    color: hsl(0 0% 98%);
+    font-size: .7rem;
+    font-weight: 500;
+  }
+
+  /* ── Lightbox ───────────────────────────────────────────── */
+
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    background: hsl(240 10% 3.9% / 0.92);
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+  .lightbox[hidden] { display: none; }
+
+  .lightbox-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: hsl(0 0% 98%);
+    font-size: .875rem;
+    font-weight: 500;
+  }
+
+  .lightbox-stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+  }
+
+  .lightbox-stage img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(0 0% 100%);
+  }
+
+  .lightbox-nav {
+    flex: none;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    border: 1px solid hsl(0 0% 98% / 0.25);
+    background: hsl(0 0% 98% / 0.1);
+    color: hsl(0 0% 98%);
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+  .lightbox-nav:hover { background: hsl(0 0% 98% / 0.2); }
+  .lightbox-nav[hidden] { display: none; }
 
   .card-meta {
     display: flex;
@@ -435,6 +516,18 @@
   </div>
 </main>
 
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Screenshot viewer">
+  <div class="lightbox-bar">
+    <span id="lightbox-title"></span>
+    <button class="btn btn-outline btn-sm" id="lightbox-close" type="button">Close</button>
+  </div>
+  <div class="lightbox-stage">
+    <button class="lightbox-nav" id="lightbox-prev" type="button" aria-label="Previous screenshot">&#8249;</button>
+    <img id="lightbox-img" alt="">
+    <button class="lightbox-nav" id="lightbox-next" type="button" aria-label="Next screenshot">&#8250;</button>
+  </div>
+</div>
+
 <footer>
   <div class="wrap">
     Plugins run with the extension&rsquo;s access on the sites they match. Read the source before
@@ -519,13 +612,21 @@
     if (plugin.version) head.appendChild(el('span', 'badge badge-outline', 'v' + plugin.version));
     node.appendChild(head);
 
-    var shot = (plugin.screenshots || []).map(safeShot).filter(Boolean)[0];
-    if (shot) {
+    var shots = (plugin.screenshots || []).map(safeShot).filter(Boolean);
+    if (shots.length) {
+      var shotBtn = el('button', 'shot-btn');
+      shotBtn.type = 'button';
+      shotBtn.setAttribute('aria-label', 'View screenshots of ' + (plugin.name || plugin.id));
       var img = el('img', 'shot');
-      img.src = shot;
+      img.src = shots[0];
       img.alt = '';
       img.loading = 'lazy';
-      node.appendChild(img);
+      shotBtn.appendChild(img);
+      if (shots.length > 1) shotBtn.appendChild(el('span', 'shot-count', shots.length + ' images'));
+      shotBtn.addEventListener('click', function () {
+        openLightbox(plugin.name || plugin.id, shots, 0);
+      });
+      node.appendChild(shotBtn);
     }
 
     node.appendChild(el('p', 'card-desc', plugin.description || ''));
@@ -571,6 +672,64 @@
     node.appendChild(source);
     return node;
   }
+
+  // ── Lightbox ───────────────────────────────────────────────────────────
+  var lightbox = document.getElementById('lightbox');
+  var lightboxImg = document.getElementById('lightbox-img');
+  var lightboxTitle = document.getElementById('lightbox-title');
+  var lightboxPrev = document.getElementById('lightbox-prev');
+  var lightboxNext = document.getElementById('lightbox-next');
+  var lightboxCloseBtn = document.getElementById('lightbox-close');
+  var lightboxShots = [];
+  var lightboxIndex = 0;
+  var lightboxOpener = null;
+
+  function showLightboxSlide() {
+    lightboxImg.src = lightboxShots[lightboxIndex];
+    var many = lightboxShots.length > 1;
+    lightboxPrev.hidden = !many;
+    lightboxNext.hidden = !many;
+    lightboxTitle.textContent = many
+      ? lightboxName + ' — ' + (lightboxIndex + 1) + ' of ' + lightboxShots.length
+      : lightboxName;
+  }
+
+  var lightboxName = '';
+
+  function openLightbox(name, shots, index) {
+    lightboxOpener = document.activeElement;
+    lightboxName = name;
+    lightboxShots = shots;
+    lightboxIndex = index;
+    lightbox.hidden = false;
+    showLightboxSlide();
+    lightboxCloseBtn.focus();
+  }
+
+  function closeLightbox() {
+    lightbox.hidden = true;
+    lightboxImg.src = '';
+    // Send focus back where it came from, so keyboard users are not dumped at the page top.
+    if (lightboxOpener && lightboxOpener.focus) lightboxOpener.focus();
+  }
+
+  function stepLightbox(delta) {
+    lightboxIndex = (lightboxIndex + delta + lightboxShots.length) % lightboxShots.length;
+    showLightboxSlide();
+  }
+
+  lightboxCloseBtn.addEventListener('click', closeLightbox);
+  lightboxPrev.addEventListener('click', function () { stepLightbox(-1); });
+  lightboxNext.addEventListener('click', function () { stepLightbox(1); });
+  lightbox.addEventListener('click', function (event) {
+    if (event.target === lightbox) closeLightbox();
+  });
+  document.addEventListener('keydown', function (event) {
+    if (lightbox.hidden) return;
+    if (event.key === 'Escape') closeLightbox();
+    else if (event.key === 'ArrowLeft' && lightboxShots.length > 1) stepLightbox(-1);
+    else if (event.key === 'ArrowRight' && lightboxShots.length > 1) stepLightbox(1);
+  });
 
   function render() {
     var query = searchEl.value.trim().toLowerCase();

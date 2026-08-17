@@ -4,21 +4,10 @@
 // half-updated state if a later request fails.
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { loadPlugins } from './validate.mjs'
+import { BASE_URL, loadPlugins } from './validate.mjs'
 
 const OUT = fileURLToPath(new URL('./registry.json', import.meta.url))
 
-// Screenshots are stored beside each plugin and published with the repo; rewrite the relative
-// paths to absolute URLs so the extension can render them from anywhere.
-// Relative screenshot paths and the registry's own homepage resolve against this — the GitHub
-// Pages origin, which also serves the gallery page and registry.json itself.
-const BASE_URL = process.env.REGISTRY_BASE_URL ?? 'https://ssz360.github.io/map-extender-plugins'
-
-function absoluteScreenshots(slug, screenshots) {
-  return (screenshots ?? []).map((shot) =>
-    /^(https:|data:)/.test(shot) ? shot : `${BASE_URL}/plugins/${slug}/${shot.replace(/^\.\//, '')}`,
-  )
-}
 
 const { loaded, errors } = loadPlugins()
 
@@ -34,7 +23,7 @@ const registry = {
   description: 'Community plugins for the Map Extender browser extension.',
   homepage: BASE_URL,
   updatedAt: new Date().toISOString().slice(0, 10),
-  plugins: loaded.map(({ slug, meta, code }) => ({
+  plugins: loaded.map(({ meta, code }) => ({
     id: meta.id,
     name: meta.name,
     description: meta.description,
@@ -45,7 +34,7 @@ const registry = {
     matchPatterns: meta.matchPatterns,
     settingsSchema: meta.settingsSchema,
     settings: meta.settings,
-    screenshots: absoluteScreenshots(slug, meta.screenshots),
+    screenshots: meta.screenshots ?? [],
     code,
   })),
 }

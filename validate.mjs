@@ -7,6 +7,8 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const ID_PREFIX = 'extender:'
+/** Where this registry is published. Screenshot URLs are checked against it. */
+export const BASE_URL = process.env.REGISTRY_BASE_URL ?? 'https://ssz360.github.io/map-extender-plugins'
 // fileURLToPath, not URL.pathname — the latter percent-encodes spaces in the path.
 const PLUGINS_DIR = fileURLToPath(new URL('./plugins/', import.meta.url))
 const SETTING_TYPES = new Set(['text', 'number', 'boolean', 'select'])
@@ -20,14 +22,34 @@ function isValidMatchPattern(pattern) {
   return /^(\*|https?):\/\/([^/]*)(\/.*)$/.test(normalized)
 }
 
-function isSafeScreenshotUrl(url) {
+/**
+ * Screenshots must be absolute URLs — the extension stores them verbatim and renders them from
+ * whatever context it happens to be in, so a relative path has no reliable base to resolve
+ * against. When the URL points at this registry's own published files, the matching file is also
+ * checked on disk: a typo would otherwise publish a link that simply never loads, and nothing
+ * downstream can detect that.
+ */
+function screenshotProblem(slug, shot) {
+  if (typeof shot !== 'string' || !shot.trim()) return 'must be a non-empty string'
+
+  let parsed
   try {
-    const parsed = new URL(url)
-    if (parsed.protocol === 'https:') return true
-    return parsed.protocol === 'data:' && /^data:image\/(png|jpe?g|gif|webp|avif);/i.test(url)
+    parsed = new URL(shot)
   } catch {
-    return false
+    return 'must be an absolute https:// URL (relative paths are not allowed)'
   }
+
+  if (parsed.protocol === 'data:') {
+    return /^data:image\/(png|jpe?g|gif|webp|avif);/i.test(shot) ? null : 'data: URLs must be an image type'
+  }
+  if (parsed.protocol !== 'https:') return 'must use https:'
+
+  const ownPrefix = `${BASE_URL}/plugins/${slug}/`
+  if (shot.startsWith(ownPrefix)) {
+    const relative = decodeURIComponent(shot.slice(ownPrefix.length))
+    if (!existsSync(join(PLUGINS_DIR, slug, relative))) return 'does not exist on disk'
+  }
+  return null
 }
 
 export function validatePlugin(slug, meta, code, errors) {
@@ -76,7 +98,8 @@ export function validatePlugin(slug, meta, code, errors) {
   }
 
   for (const shot of meta.screenshots ?? []) {
-    if (!isSafeScreenshotUrl(shot)) fail(`screenshot "${shot}" must be https or data:image/*`)
+    const problem = screenshotProblem(slug, shot)
+    if (problem) fail(`screenshot "${shot}" ${problem}`)
   }
 
   if (!code.trim()) fail('plugin.js is empty')

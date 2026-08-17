@@ -32,5 +32,8 @@
     "services": "osm,google,openrailwaymap,geohack",
     "position": "top-left"
   },
-  "screenshots": []
+  "screenshots": [
+    "https://ssz360.github.io/map-extender-plugins/plugins/open-elsewhere/screenshots/Open-This-View-Elsewhere.jpeg",
+    "https://ssz360.github.io/map-extender-plugins/plugins/open-elsewhere/screenshots/Open-This-View-Elsewhere-2.jpeg"
+  ]
 }

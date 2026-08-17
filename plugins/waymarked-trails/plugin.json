@@ -32,5 +32,7 @@
     "route": "hiking",
     "opacity": 1
   },
-  "screenshots": []
+  "screenshots": [
+    "https://ssz360.github.io/map-extender-plugins/plugins/waymarked-trails/screenshots/Waymarked-Trails-Overlay.jpeg"
+  ]
 }

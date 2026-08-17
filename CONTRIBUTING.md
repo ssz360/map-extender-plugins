@@ -25,7 +25,7 @@ plugins/my-plugin/
     { "key": "color", "label": "Marker colour", "type": "text", "default": "red" }
   ],
   "settings": { "color": "red" },
-  "screenshots": ["screenshots/main.png"]
+  "screenshots": ["https://ssz360.github.io/map-extender-plugins/plugins/my-plugin/screenshots/main.png"]
 }
 ```
 
@@ -43,8 +43,15 @@ Then run `node validate.mjs`.
 - **A `select` default is one of its own `options`.**
 - **`matchPatterns` are `chrome.userScripts` patterns** — `<all_urls>`, `*://*/*`,
   `*://*.example.com/*`. Matched per URL component, so a bare hostname is not a pattern.
-- **Screenshots are `https:` or `data:image/*`.** Relative paths are resolved against the
-  published base URL at build time.
+- **Screenshots must be absolute `https:` URLs** (or inline `data:image/*`). Relative paths are
+  rejected: the extension stores the URL verbatim and renders it from whatever context it is in,
+  so there is no reliable base to resolve against. Commit the image under your plugin's
+  `screenshots/` folder and point at its published address — `validate.mjs` checks that a URL
+  under this registry's own base actually exists on disk, so a typo fails the build instead of
+  publishing a link that silently never loads.
+- **Keep screenshots to roughly 1400px wide.** Full-resolution Retina captures are several
+  megabytes each and the gallery loads one per plugin; the card renders them a few hundred pixels
+  wide. Avoid spaces in filenames — use hyphens.
 - **`plugin.js` has no `import` or `export`.** It is injected as a source string, not a module.
 
 ## Writing the code
