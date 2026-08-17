@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map Extender Plugins</title>
+<meta name="description" content="A registry of community plugins for the Map Extender browser extension.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<!--
+  Plain HTML/CSS/JS — no framework, no build step, no Actions workflow. Just commit this file and
+  point GitHub Pages at the branch.
+
+  The plugin list is read from ./registry.json at runtime rather than duplicated here, so this
+  page can never drift from what the extension actually downloads.
+-->
+<style>
+  /* shadcn-style tokens: HSL triplets so colours can be composed with alpha where needed. */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --border: 240 5.9% 90%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --accent: 240 4.8% 95.9%;
+    --ring: 240 5% 64.9%;
+    --radius: 0.5rem;
+
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: 240 10% 3.9%;
+      --foreground: 0 0% 98%;
+      --card: 240 10% 3.9%;
+      --muted: 240 3.7% 15.9%;
+      --muted-foreground: 240 5% 64.9%;
+      --border: 240 3.7% 15.9%;
+      --primary: 0 0% 98%;
+      --primary-foreground: 240 5.9% 10%;
+      --accent: 240 3.7% 15.9%;
+      --ring: 240 4.9% 83.9%;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --border: 240 3.7% 15.9%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --accent: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* ── Header ─────────────────────────────────────────────── */
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid hsl(var(--border));
+    background: hsl(var(--background) / 0.85);
+    backdrop-filter: blur(8px);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    height: 3.5rem;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    font-weight: 600;
+    font-size: .95rem;
+    letter-spacing: -.01em;
+    text-decoration: none;
+  }
+
+  .header-actions { display: flex; align-items: center; gap: .5rem; }
+
+  /* ── Buttons ────────────────────────────────────────────── */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    height: 2.25rem;
+    padding: 0 .85rem;
+    border-radius: calc(var(--radius) - 2px);
+    border: 1px solid transparent;
+    font: inherit;
+    font-size: .825rem;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background-color .15s, border-color .15s, color .15s;
+  }
+  .btn:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+
+  .btn-primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  .btn-primary:hover { background: hsl(var(--primary) / 0.9); }
+
+  .btn-outline {
+    border-color: hsl(var(--border));
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+  .btn-outline:hover { background: hsl(var(--accent)); }
+
+  .btn-ghost { background: transparent; color: hsl(var(--foreground)); }
+  .btn-ghost:hover { background: hsl(var(--accent)); }
+
+  .btn-sm { height: 2rem; padding: 0 .7rem; font-size: .8rem; }
+  .btn-icon { width: 2.25rem; padding: 0; }
+
+  /* ── Hero ───────────────────────────────────────────────── */
+
+  .hero { padding: 4rem 0 2.5rem; }
+
+  h1 {
+    margin: 0 0 .85rem;
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 700;
+    letter-spacing: -.03em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin: 0;
+    max-width: 46rem;
+    font-size: 1.075rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* ── Install strip ──────────────────────────────────────── */
+
+  .install {
+    margin-top: 2rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    background: hsl(var(--card));
+    padding: 1.15rem 1.25rem;
+  }
+
+  .install-label {
+    font-size: .8rem;
+    font-weight: 600;
+    margin-bottom: .6rem;
+  }
+
+  .install-row { display: flex; gap: .5rem; align-items: stretch; }
+
+  .url-field {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    height: 2.25rem;
+    padding: 0 .7rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--muted) / 0.5);
+    font-family: var(--mono);
+    font-size: .78rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  .url-field::-webkit-scrollbar { display: none; }
+
+  .steps {
+    margin: 1rem 0 0;
+    padding-left: 1.15rem;
+    font-size: .85rem;
+    color: hsl(var(--muted-foreground));
+  }
+  .steps li + li { margin-top: .2rem; }
+
+  /* ── Toolbar ────────────────────────────────────────────── */
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 3rem 0 1.25rem;
+  }
+
+  .search {
+    flex: 1;
+    min-width: 14rem;
+    height: 2.25rem;
+    padding: 0 .75rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--background));
+    color: inherit;
+    font: inherit;
+    font-size: .85rem;
+  }
+  .search::placeholder { color: hsl(var(--muted-foreground)); }
+  .search:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+
+  .count { font-size: .825rem; color: hsl(var(--muted-foreground)); font-variant-numeric: tabular-nums; }
+
+  /* ── Cards ──────────────────────────────────────────────── */
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: 1rem;
+    padding-bottom: 4rem;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    background: hsl(var(--card));
+    padding: 1.25rem;
+    transition: border-color .15s;
+  }
+  .card:hover { border-color: hsl(var(--ring) / 0.6); }
+
+  .card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .75rem;
+  }
+
+  .card-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    line-height: 1.3;
+  }
+
+  .card-author { margin: .2rem 0 0; font-size: .8rem; color: hsl(var(--muted-foreground)); }
+
+  .card-desc {
+    margin: .75rem 0 0;
+    font-size: .875rem;
+    color: hsl(var(--muted-foreground));
+    flex: 1;
+  }
+
+  .shot {
+    margin-top: .9rem;
+    width: 100%;
+    height: 9rem;
+    object-fit: cover;
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--muted));
+  }
+
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-top: .9rem;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    height: 1.35rem;
+    padding: 0 .5rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: .7rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge-secondary { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+  .badge-outline { border-color: hsl(var(--border)); color: hsl(var(--muted-foreground)); font-family: var(--mono); }
+
+  .card-foot {
+    display: flex;
+    gap: .5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid hsl(var(--border));
+  }
+
+  .source { margin-top: .9rem; }
+  .source[hidden] { display: none; }
+
+  .source pre {
+    margin: 0;
+    max-height: 22rem;
+    overflow: auto;
+    padding: .9rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--muted) / 0.5);
+    font-family: var(--mono);
+    font-size: .75rem;
+    line-height: 1.6;
+    tab-size: 2;
+  }
+
+  .patterns {
+    margin: .6rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* ── States ─────────────────────────────────────────────── */
+
+  .state {
+    grid-column: 1 / -1;
+    border: 1px dashed hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: hsl(var(--muted-foreground));
+    font-size: .9rem;
+  }
+
+  .skeleton {
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    background: hsl(var(--muted) / 0.4);
+    height: 13rem;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 50% { opacity: .5; } }
+
+  footer {
+    border-top: 1px solid hsl(var(--border));
+    padding: 2rem 0 3rem;
+    font-size: .825rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap header-inner">
+    <a class="brand" href="./">
+      <span aria-hidden="true">🧭</span>
+      <span>Map Extender Plugins</span>
+    </a>
+    <div class="header-actions">
+      <a class="btn btn-ghost btn-sm" href="./registry.json">registry.json</a>
+      <button class="btn btn-ghost btn-icon" id="theme" type="button" aria-label="Toggle dark mode">
+        <span id="theme-icon" aria-hidden="true">◑</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Plugins for Map Extender</h1>
+      <p class="lede">
+        Extra plugins for the Map Extender browser extension — overlays, map tools and data layers.
+        Add the registry below and they show up in the extension&rsquo;s gallery, where you can read
+        the source of any plugin before installing it.
+      </p>
+
+      <div class="install">
+        <div class="install-label">Registry address</div>
+        <div class="install-row">
+          <div class="url-field" id="url"></div>
+          <button class="btn btn-primary" id="copy" type="button">Copy</button>
+        </div>
+        <ol class="steps">
+          <li>In the extension popup, click <strong>Open Plugins</strong>.</li>
+          <li>Click <strong>Browse gallery</strong>, paste the address, then <strong>Add registry</strong>.</li>
+          <li>Open any plugin to read its code, then add it. Adding never enables it — you switch it
+              on per site from the popup.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section>
+      <div class="toolbar">
+        <input class="search" id="search" type="search" placeholder="Search plugins…" aria-label="Search plugins">
+        <span class="count" id="count"></span>
+      </div>
+      <div class="grid" id="grid">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    Plugins run with the extension&rsquo;s access on the sites they match. Read the source before
+    installing anything — the extension shows it to you first, and never updates plugin code without
+    showing you what changed.
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var REGISTRY_URL = 'https://raw.githubusercontent.com/ssz360/map-extender-plugins/refs/heads/main/registry.json';
+
+  // ── Theme ──────────────────────────────────────────────────────────────
+  var root = document.documentElement;
+  var stored = null;
+  try { stored = localStorage.getItem('theme'); } catch (e) { /* private mode */ }
+  if (stored === 'dark' || stored === 'light') root.setAttribute('data-theme', stored);
+
+  document.getElementById('theme').addEventListener('click', function () {
+    var isDark = root.getAttribute('data-theme') === 'dark' ||
+      (!root.hasAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+    var next = isDark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+  });
+
+  // ── Install strip ──────────────────────────────────────────────────────
+  var urlField = document.getElementById('url');
+  urlField.textContent = REGISTRY_URL;
+
+  document.getElementById('copy').addEventListener('click', function () {
+    var btn = this;
+    var done = function (ok) {
+      btn.textContent = ok ? 'Copied' : 'Copy failed';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 1600);
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(REGISTRY_URL).then(function () { done(true); }, function () { done(false); });
+    } else {
+      done(false);
+    }
+  });
+
+  // ── Rendering ──────────────────────────────────────────────────────────
+  var grid = document.getElementById('grid');
+  var countEl = document.getElementById('count');
+  var searchEl = document.getElementById('search');
+  var plugins = [];
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    // textContent throughout: registry entries are contributed by other people, so nothing from
+    // the JSON is ever parsed as HTML.
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
+  function state(message) {
+    grid.textContent = '';
+    grid.appendChild(el('div', 'state', message));
+  }
+
+  // Matches the extension's own rule: only https and inline images are rendered.
+  function safeShot(url) {
+    if (typeof url !== 'string') return null;
+    if (/^https:\/\//i.test(url)) return url;
+    if (/^data:image\/(png|jpe?g|gif|webp|avif);/i.test(url)) return url;
+    return null;
+  }
+
+  function card(plugin) {
+    var node = el('article', 'card');
+
+    var head = el('div', 'card-head');
+    var titleBox = el('div');
+    titleBox.appendChild(el('h3', 'card-title', plugin.name || plugin.id));
+    if (plugin.author) titleBox.appendChild(el('p', 'card-author', 'by ' + plugin.author));
+    head.appendChild(titleBox);
+    if (plugin.version) head.appendChild(el('span', 'badge badge-outline', 'v' + plugin.version));
+    node.appendChild(head);
+
+    var shot = (plugin.screenshots || []).map(safeShot).filter(Boolean)[0];
+    if (shot) {
+      var img = el('img', 'shot');
+      img.src = shot;
+      img.alt = '';
+      img.loading = 'lazy';
+      node.appendChild(img);
+    }
+
+    node.appendChild(el('p', 'card-desc', plugin.description || ''));
+
+    var meta = el('div', 'card-meta');
+    var settings = (plugin.settingsSchema || []).length;
+    if (settings) meta.appendChild(el('span', 'badge badge-secondary', settings + (settings === 1 ? ' setting' : ' settings')));
+    if (plugin.usage) meta.appendChild(el('span', 'badge badge-secondary', plugin.usage));
+    node.appendChild(meta);
+
+    var patterns = el('ul', 'patterns');
+    (plugin.matchPatterns || []).forEach(function (pattern) {
+      patterns.appendChild(el('li', null, 'Runs on ' + pattern));
+    });
+    node.appendChild(patterns);
+
+    var source = el('div', 'source');
+    source.hidden = true;
+    var pre = el('pre');
+    pre.appendChild(el('code', null, plugin.code || ''));
+    source.appendChild(pre);
+
+    var foot = el('div', 'card-foot');
+    var toggle = el('button', 'btn btn-outline btn-sm', 'View source');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.addEventListener('click', function () {
+      source.hidden = !source.hidden;
+      toggle.textContent = source.hidden ? 'View source' : 'Hide source';
+      toggle.setAttribute('aria-expanded', String(!source.hidden));
+    });
+    foot.appendChild(toggle);
+
+    if (plugin.homepage && /^https:\/\//i.test(plugin.homepage)) {
+      var link = el('a', 'btn btn-ghost btn-sm', 'Homepage');
+      link.href = plugin.homepage;
+      link.rel = 'noopener noreferrer';
+      link.target = '_blank';
+      foot.appendChild(link);
+    }
+
+    node.appendChild(foot);
+    node.appendChild(source);
+    return node;
+  }
+
+  function render() {
+    var query = searchEl.value.trim().toLowerCase();
+    var shown = plugins.filter(function (p) {
+      if (!query) return true;
+      return [p.name, p.description, p.author, p.id].some(function (field) {
+        return String(field || '').toLowerCase().indexOf(query) !== -1;
+      });
+    });
+
+    countEl.textContent = shown.length + ' of ' + plugins.length + ' plugin' + (plugins.length === 1 ? '' : 's');
+    grid.textContent = '';
+
+    if (!shown.length) {
+      state(query ? 'Nothing matches “' + query + '”.' : 'This registry lists no plugins.');
+      return;
+    }
+    shown.forEach(function (p) { grid.appendChild(card(p)); });
+  }
+
+  searchEl.addEventListener('input', render);
+
+  fetch('./registry.json', { cache: 'no-cache' })
+    .then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function (data) {
+      plugins = Array.isArray(data.plugins) ? data.plugins : [];
+      plugins.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
+      render();
+    })
+    .catch(function (err) {
+      countEl.textContent = '';
+      state('Could not load registry.json (' + err.message + '). The registry itself still works — ' +
+        'add the address above in the extension.');
+    });
+})();
+</script>
+
+</body>
+</html>

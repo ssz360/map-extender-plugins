@@ -1,0 +1,23 @@
+{
+  "id": "extender:cadastral",
+  "name": "Italy Cadastral Overlay",
+  "description": "WMS overlay of Italian cadastral parcels, zoning, buildings and roads, from the Agenzia delle Entrate mapping service. Only covers Italy.",
+  "version": "1.0.0",
+  "author": "Map Extender",
+  "usage": "Always-on map overlay",
+  "matchPatterns": [
+    "*://*/*"
+  ],
+  "settingsSchema": [
+    {
+      "key": "opacity",
+      "label": "Opacity (0–1)",
+      "type": "number",
+      "default": 0.8
+    }
+  ],
+  "settings": {
+    "opacity": 0.8
+  },
+  "screenshots": []
+}
