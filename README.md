@@ -5,7 +5,7 @@ A registry of community plugins for the Map Extender browser extension.
 Add it in the extension: **Plugins → Browse gallery → Add registry**, then paste:
 
 ```
-https://raw.githubusercontent.com/ssz360/map-extender-plugins/refs/heads/main/registry.json
+https://ssz360.github.io/map-extender-plugins/registry.json
 ```
 
 Push it to its own remote:
@@ -50,12 +50,18 @@ URL on `main`.
 
 ## Publishing
 
-`registry.json` is committed and served straight from the repository via
-`raw.githubusercontent.com`, which is always current and needs no Pages setup. It is cached for
-five minutes (`cache-control: max-age=300`), so a push can take that long to be visible.
+`registry.json` is committed and published by GitHub Pages from the `main` branch, alongside the
+gallery page at https://ssz360.github.io/map-extender-plugins/. Pages serves it as
+`application/json` with permissive CORS and an `ETag`, so the extension's conditional refresh
+works against it.
 
-Enabling GitHub Pages is optional; if you do, `https://ssz360.github.io/map-extender-plugins/registry.json`
-serves the same file and the extension accepts either.
+It is cached for ten minutes (`cache-control: max-age=600`), so a push can take that long to
+become visible. A publish that seems not to have landed is usually just that cache.
+
+The same file is also reachable at
+`https://raw.githubusercontent.com/ssz360/map-extender-plugins/refs/heads/main/registry.json`,
+which is always current but serves `text/plain`. The extension parses the payload rather than
+trusting the content type, so either address works.
 
 The extension parses the response rather than trusting its `Content-Type`, so `text/plain` from
 raw.githubusercontent is fine.

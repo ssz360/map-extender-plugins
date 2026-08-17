@@ -8,8 +8,8 @@
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
 <!--
-  Plain HTML/CSS/JS — no framework, no build step, no Actions workflow. Just commit this file and
-  point GitHub Pages at the branch.
+  Plain HTML/CSS/JS — no framework, no build step, no Actions workflow. Published by GitHub Pages
+  straight from the main branch, alongside registry.json.
 
   The plugin list is read from ./registry.json at runtime rather than duplicated here, so this
   page can never drift from what the extension actually downloads.
@@ -447,7 +447,7 @@
 (function () {
   'use strict';
 
-  var REGISTRY_URL = 'https://raw.githubusercontent.com/ssz360/map-extender-plugins/refs/heads/main/registry.json';
+  var REGISTRY_URL = 'https://ssz360.github.io/map-extender-plugins/registry.json';
 
   // ── Theme ──────────────────────────────────────────────────────────────
   var root = document.documentElement;

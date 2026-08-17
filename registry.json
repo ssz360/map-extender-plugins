@@ -2,8 +2,8 @@
   "formatVersion": 1,
   "name": "Map Extender Plugins",
   "description": "Community plugins for the Map Extender browser extension.",
-  "homepage": "https://raw.githubusercontent.com/ssz360/map-extender-plugins/refs/heads/main",
-  "updatedAt": "2026-08-16",
+  "homepage": "https://ssz360.github.io/map-extender-plugins",
+  "updatedAt": "2026-08-17",
   "plugins": [
     {
       "id": "extender:cadastral",
