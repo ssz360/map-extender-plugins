@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "description": "Community plugin registry for the Map Extender browser extension.",
+  "license": "MIT",
   "scripts": {
     "validate": "node validate.mjs",
     "build": "node build.mjs"

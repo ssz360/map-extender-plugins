@@ -68,7 +68,7 @@ raw.githubusercontent is fine.
 
 ## Licence
 
-Not yet chosen — add a `LICENSE` before accepting contributions, and decide whether plugins may
-carry their own via a `license` field.
+MIT — see [LICENSE](./LICENSE). Whether an individual plugin may carry its own, different licence
+via a `license` field is still an open question — not addressed by adding this one.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) to add a plugin.
